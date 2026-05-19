@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String
+  username     String?
+  profile      UserProfile?
+  learningGoals LearningGoal[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model UserProfile {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id])
+  knownLanguages        String   @default("[]")
+  targetLanguages       String   @default("[]")
+  learningPurpose       String?
+  currentLevel          String?
+  preferredLearningStyle String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model LearningGoal {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  sourceLanguage  String
+  targetLanguage  String
+  goalDescription String?
+  status          String   @default("active")
+
+  assessments     Assessment[]
+  skillProfiles   SkillProfile[]
+  learningPlans   LearningPlan[]
+  documents       LearningDocument[]
+  exercises       Exercise[]
+  events          LearningEvent[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Assessment {
+  id              String   @id @default(cuid())
+  userId          String
+  learningGoalId  String
+  learningGoal    LearningGoal @relation(fields: [learningGoalId], references: [id])
+  sourceLanguage  String
+  targetLanguage  String
+  score           Int?
+  level           String
+  strengths       String   @default("[]")
+  weaknesses      String   @default("[]")
+  aiSummary       String?
+  answers         AssessmentAnswer[]
+  createdAt       DateTime @default(now())
+}
+
+model AssessmentQuestion {
+  id              String   @id @default(cuid())
+  sourceLanguage  String
+  targetLanguage  String
+  questionType    String
+  topic           String
+  difficulty      String
+  question        String
+  options         String?
+  answer          String?
+  explanation     String?
+  createdAt       DateTime @default(now())
+}
+
+model AssessmentAnswer {
+  id              String   @id @default(cuid())
+  assessmentId    String
+  assessment      Assessment @relation(fields: [assessmentId], references: [id])
+  questionId      String
+  userAnswer      String
+  isCorrect       Boolean?
+  aiFeedback      String?
+  createdAt       DateTime @default(now())
+}
+
+model SkillProfile {
+  id              String   @id @default(cuid())
+  userId          String
+  learningGoalId  String
+  learningGoal    LearningGoal @relation(fields: [learningGoalId], references: [id])
+  language        String
+  topic           String
+  masteryLevel    Int
+  evidence        String   @default("[]")
+  updatedAt       DateTime @updatedAt
+}
+
+model LearningPlan {
+  id                 String   @id @default(cuid())
+  userId             String
+  learningGoalId     String
+  learningGoal       LearningGoal @relation(fields: [learningGoalId], references: [id])
+  title              String
+  description        String?
+  status             String   @default("active")
+  aiGeneratedReason  String?
+  stages             LearningPlanStage[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model LearningPlanStage {
+  id              String   @id @default(cuid())
+  learningPlanId  String
+  learningPlan    LearningPlan @relation(fields: [learningPlanId], references: [id])
+  order           Int
+  title           String
+  description     String?
+  keyTopics       String   @default("[]")
+  status          String   @default("not_started")
+  estimatedHours  Int?
+  documents       LearningDocument[]
+  exercises       Exercise[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model LearningDocument {
+  id              String   @id @default(cuid())
+  userId          String
+  learningGoalId  String
+  learningGoal    LearningGoal @relation(fields: [learningGoalId], references: [id])
+  stageId         String?
+  stage           LearningPlanStage? @relation(fields: [stageId], references: [id])
+  title           String
+  sourceLanguage  String
+  targetLanguage  String
+  topic           String
+  contentMarkdown String
+  aiPromptVersion String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Exercise {
+  id                String   @id @default(cuid())
+  userId            String
+  learningGoalId    String
+  learningGoal      LearningGoal @relation(fields: [learningGoalId], references: [id])
+  stageId           String?
+  stage             LearningPlanStage? @relation(fields: [stageId], references: [id])
+  topic             String
+  difficulty        String
+  title             String
+  description       String
+  starterCode       String?
+  expectedOutput    String?
+  referenceSolution String?
+  submissions       CodeSubmission[]
+  createdAt         DateTime @default(now())
+}
+
+model CodeSubmission {
+  id              String   @id @default(cuid())
+  userId          String
+  exerciseId      String
+  exercise        Exercise @relation(fields: [exerciseId], references: [id])
+  language        String
+  code            String
+  runtimeResult   String?
+  aiFeedback      String?
+  score           Int?
+  createdAt       DateTime @default(now())
+}
+
+model LearningEvent {
+  id              String   @id @default(cuid())
+  userId          String
+  learningGoalId  String
+  learningGoal    LearningGoal @relation(fields: [learningGoalId], references: [id])
+  eventType       String
+  eventData       String?
+  createdAt       DateTime @default(now())
+}
